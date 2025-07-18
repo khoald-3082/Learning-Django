@@ -7,3 +7,6 @@ Learning Django rest framwork
 
 ## Server command:
 - Command start server: `python real_world/manage.py runserver`
+
+## Show setting:
+- Get urls: `python real_world/manage.py show_urls`
