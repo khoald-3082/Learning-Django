@@ -1,4 +1,5 @@
 from django.db import models
+from .article import Article
 from .user import User
 
 class Comment(models.Model):
@@ -9,5 +10,5 @@ class Comment(models.Model):
     def __str__(self):
         return self.body
 
-    # article = models.ForeignKey("Article", on_delete=models.CASCADE, related_name='comments')
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
