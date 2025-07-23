@@ -12,10 +12,10 @@ from ..constants.enum import HTTPStatus
 class ArticleView(APIView):
     """Controller handle for API of Articles"""
 
-    def get(self, request, id=None):
-        if id is not None:
-            """GET detail by id"""
-            article = Article.objects.filter(id=id).first()
+    def get(self, request, slug=None):
+        if slug is not None:
+            """GET detail by slug"""
+            article = Article.objects.filter(slug=slug).first()
             if not article:
                 return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
 
@@ -41,13 +41,13 @@ class ArticleView(APIView):
 
         return Response(article.errors, status=HTTPStatus.BAD_REQUEST)
 
-    def put(self, request, id=None):
+    def put(self, request, slug=None):
         """PUT update article"""
         author = User.objects.filter(id=request.GET.get('user_id')).first()
         if not author:
             return Response({"error": "Unauthorized"}, status=HTTPStatus.UNAUTHORIZED)
 
-        article = Article.objects.filter(id=id).first()
+        article = Article.objects.filter(slug=slug).first()
         if not article:
             return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
         elif article.author != author:
@@ -63,13 +63,13 @@ class ArticleView(APIView):
 
         return Response(article.errors, status=HTTPStatus.BAD_REQUEST)
 
-    def delete(self, request, id=None):
+    def delete(self, request, slug=None):
         """DELETE article"""
         author = User.objects.filter(id=request.GET.get('user_id')).first()
         if not author:
             return Response({"error": "Unauthorized"}, status=HTTPStatus.UNAUTHORIZED)
 
-        article = Article.objects.filter(id=id).first()
+        article = Article.objects.filter(slug=slug).first()
         if not article:
             return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
         elif article.author != author:

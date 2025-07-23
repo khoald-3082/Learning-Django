@@ -7,10 +7,10 @@ app_name = 'api'
 
 urlpatterns = [
     path('articles/', ArticleView.as_view(), name='article-list-create'),
-    path('articles/<int:id>/', ArticleView.as_view(), name='article-detail-update-delete'),
+    path('articles/<slug:slug>/', ArticleView.as_view(), name='article-detail-update-delete'),
 
-    path('comments/', CommentView.as_view(), name='comment-create'),
-    path('comments/<int:id>/', CommentView.as_view(), name='comment-delete'),
+    path('articles/<slug:slug>/comments/', CommentView.as_view(), name='comment-list-create'),
+    path('articles/<slug:slug>/comments/<int:id>/', CommentView.as_view(), name='comment-update-delete'),
 
     path('tags/', TagView.as_view(), name='tag-list'),
 
