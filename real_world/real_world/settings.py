@@ -10,8 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
-from decouple import config
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(dotenv_path, override=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,16 +82,17 @@ WSGI_APPLICATION = 'real_world.wsgi.application'
 # Use environment variables to configure the database settings: https://stackoverflow.com/a/79155285
 import pymysql
 
+
 pymysql.install_as_MySQLdb()
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'OPTIONS': {
-            'database': config('DATABASE_NAME'),
-            'user': config('DATABASE_USER'),
-            'password': config('DATABASE_PASSWORD'),
-            'host': config('DATABASE_HOST'),
-            'port': int(config('DATABASE_PORT')),
+            'database': os.getenv('DATABASE_NAME'),
+            'user': os.getenv('DATABASE_USER'),
+            'password': os.getenv('DATABASE_PASSWORD'),
+            'host': os.getenv('DATABASE_HOST'),
+            'port': int(os.getenv('DATABASE_PORT')),
         },
     }
 }

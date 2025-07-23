@@ -3,6 +3,7 @@ from .user import User
 from .tag import Tag
 
 class Article(models.Model):
+    slug = models.SlugField(max_length=255, unique=True)
     title = models.CharField(max_length=255)
     body = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles')

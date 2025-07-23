@@ -1,14 +1,14 @@
 from rest_framework import serializers
-from .article_base_response import ArticleBaseResponseSerializer
+from .article_serializer import ArticleSerializer
 
-class ArticleListResponseSerializer(ArticleBaseResponseSerializer):
+class ArticleListResponseSerializer(ArticleSerializer):
     """Serializer optimized for listing articles - only showing necessary information"""
     tag_list = serializers.SerializerMethodField()
     title = serializers.SerializerMethodField()
     body = serializers.SerializerMethodField()
 
-    class Meta(ArticleBaseResponseSerializer.Meta):
-        fields = ['id', 'title', 'body', 'author_name', 'tag_list', 'created_at']
+    class Meta(ArticleSerializer.Meta):
+        fields = ArticleSerializer.Meta.fields + ['tag_list']
 
     def get_title(self, obj):
         """Get first 20 characters of title"""
