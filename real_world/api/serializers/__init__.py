@@ -1,2 +1,4 @@
-from .article_base_response import ArticleBaseResponseSerializer
-from .article_list_response import ArticleListResponseSerializer
+from .article_serializer import ArticleSerializer
+from .article_list_response_serializer import ArticleListResponseSerializer
+from .article_detail_response_serializer import ArticleDetailResponseSerializer
+
