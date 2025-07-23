@@ -14,7 +14,7 @@ urlpatterns = [
 
     path('tags/', TagView.as_view(), name='tag-list'),
 
-    path('user/', UserView.as_view(), name='user-detail'),
+    path('profiles/<str:username>/', UserView.as_view(), name='user-detail'),
 
     path('', include(router.urls)),
 ]

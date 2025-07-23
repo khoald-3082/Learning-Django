@@ -1,13 +1,12 @@
+from http import HTTPStatus
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
 
 from ..models.article import Article
 from ..models.user import User
 from ..serializers.article_detail_response_serializer import ArticleDetailResponseSerializer
 from ..serializers.article_list_response_serializer import ArticleListResponseSerializer
 from ..serializers.article_serializer import ArticleSerializer
-from ..constants.enum import HTTPStatus
 
 class ArticleView(APIView):
     """Controller handle for API of Articles"""
@@ -29,7 +28,7 @@ class ArticleView(APIView):
         """POST create new article"""
         author = User.objects.filter(id=request.GET.get('user_id')).first()
         if not author:
-            return Response({"error": "Author not found"}, status=404)
+            return Response({"error": "Author not found"}, status=HTTPStatus.UNAUTHORIZED)
 
         article = ArticleSerializer(data=request.data)
         if article.is_valid():
