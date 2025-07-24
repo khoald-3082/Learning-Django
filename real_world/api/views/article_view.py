@@ -60,7 +60,7 @@ class ArticleView(APIView):
             except Exception as e:
                 return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
 
-        return Response(article.errors, status=HTTPStatus.BAD_REQUEST)
+        return Response(article_serializer.errors, status=HTTPStatus.BAD_REQUEST)
 
     def delete(self, request, slug=None):
         """DELETE article"""
