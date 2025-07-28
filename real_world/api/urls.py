@@ -8,10 +8,12 @@ app_name = 'api'
 
 urlpatterns = [
     path('articles/', get_article, name='article-list'),
+    path('articles/feed/', get_feed, name='article-feed'),
     path('articles/create/', create_article, name='article-create'),
     path('articles/<slug:slug>/', get_article, name='article-detail'),
     path('articles/<slug:slug>/update/', update_article, name='article-update'),
     path('articles/<slug:slug>/delete/', delete_article, name='article-delete'),
+    path('articles/<slug:slug>/favorite/', add_favorite, name='article-favorite'),
 
     path('articles/<slug:slug>/comments/', comment_list, name='comment-list-create'),
     path('articles/<slug:slug>/comments/create/', create_comment, name='comment-create'),
