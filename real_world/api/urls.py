@@ -23,6 +23,7 @@ urlpatterns = [
     path('profiles/', get_profile, name='user-detail'),
     path('users/', register_user, name='user-register'),
 
+    path('admin/profiles/', get_admin_profile, name='admin-user-detail'),
 
     path('', include(router.urls)),
 
