@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.core.paginator import Paginator
+
+from .helpers.paginate_helper import paginate_queryset
 
 from ..models.favorite import Favorite
 from ..models.article import Article
@@ -23,14 +26,15 @@ def get_article(request, slug=None):
         return Response(ArticleDetailResponseSerializer(article).data)
     else:
         """GET list of articles"""
-        all_articles = Article.objects.all()
+        all_articles = Article.objects.all().order_by('-created_at')
         filter_tag = request.query_params.get('tag', None)
         if filter_tag:
             all_articles = all_articles.filter(tags__name__iexact=filter_tag.strip())
         filter_author = request.query_params.get('author', None)
         if filter_author:
             all_articles = all_articles.filter(author__username=filter_author.strip())
-        return Response({"data": ArticleListResponseSerializer(all_articles, many=True).data})
+
+        return paginate_queryset(all_articles, request, ArticleListResponseSerializer)
 
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
