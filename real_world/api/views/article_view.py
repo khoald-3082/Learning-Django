@@ -1,11 +1,14 @@
 from http import HTTPStatus
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle
 from django.core.paginator import Paginator
 
+
+from ..throttles.custom_view_throttle import CustomViewThrottle
 from .helpers.paginate_helper import paginate_queryset
 
 from ..models.favorite import Favorite
@@ -16,6 +19,7 @@ from ..serializers.article_list_response_serializer import ArticleListResponseSe
 from ..serializers.article_serializer import ArticleSerializer
 
 @api_view(['GET'])
+@throttle_classes([CustomViewThrottle])
 def get_article(request, slug=None):
     if slug is not None:
         """GET detail by slug"""
