@@ -1,5 +1,8 @@
 from .tag_view import TagView
-from .user_view import get_profile, register_user
-from .comment_view import comment_list, create_comment, update_comment, delete_comment
-from .article_view import get_article, create_article, update_article, delete_article, get_feed, add_favorite
-from .admin_view import get_admin_profile
+from .user_view import GetProfileView, RegisterUserView
+from .comment_view import CommentListCreateView, CommentDetailView
+from .favorite_view import FavoriteView
+from .article_view import ArticleListCreateView, ArticleDetailView, ArticleFeedView
+from .admin_view import AdminProfileView
+from .favorite_view import FavoriteView
+from .follow_view import FollowView
