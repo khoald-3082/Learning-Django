@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -10,17 +9,15 @@ from ..models.user import User
 from ..serializers.article_list_response_serializer import ArticleListResponseSerializer
 from ..serializers.comment_serializer import CommentSerializer
 from ..serializers.user_serializer import UserSerializer
+from ..permissions.is_user import IsUserPermission
 
 """Controller handle for API of User"""
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsUserPermission])
 def get_profile(request):
     """GET user profile"""
-    print(f"User: {request.user.is_authenticated}")  # Debug xem user là gì
-    print(f"Is authenticated: {request.user.is_authenticated}")
-    print(f"Auth header: {request.META.get('HTTP_AUTHORIZATION', 'None')}")
     user = request.user
     articles = user.articles.all().order_by('-created_at')
     comments = user.comments.all().order_by('-created_at')

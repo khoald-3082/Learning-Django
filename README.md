@@ -9,4 +9,5 @@ Learning Django rest framwork
 - Command start server: `python real_world/manage.py runserver`
 
 ## Show setting:
+- Enable virtual enviroment: `source env/bin/activate`
 - Get urls: `python real_world/manage.py show_urls`

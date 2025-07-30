@@ -7,6 +7,7 @@ class User(AbstractUser):
 	password = models.CharField(max_length=256)
 	first_name = models.CharField(max_length=256, blank=True)
 	last_name = models.CharField(max_length=256, blank=True)
+	is_staff = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
