@@ -1,90 +1,70 @@
-from http import HTTPStatus
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework import generics
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 
-from ..models.article import Article
-from ..models.user import User
-from ..serializers.comment_serializer import CommentSerializer
+from ..models import *
+from ..serializers import *
+from .helpers.custom_paginate import CustomPagination
+from ..permissions.is_user import IsUserPermission
 
-@api_view(['GET'])
-def comment_list(request, slug=None):
-    """GET comments for article"""
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
+# View for listing and creating comments for an article
+class CommentListCreateView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializer
+    pagination_class = CustomPagination
 
-    comments = article.comments.all().order_by('-created_at')
-    return Response({"data": CommentSerializer(comments, many=True).data})
+    def get_queryset(self):
+        slug = self.kwargs.get('slug')
+        article = get_object_or_404(Article, slug=slug)
+        return article.comments.all().order_by('-created_at')
 
-@api_view(['POST'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def create_comment(request, slug=None):
-    """POST create comment for article"""
-    author = request.user
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsUserPermission()]
+        return []
 
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
+    def get_authenticators(self):
+        if self.request.method == 'POST':
+            return [JWTAuthentication()]
+        return []
 
-    comment = CommentSerializer(data=request.data)
-    if comment.is_valid():
-        try:
-            comment.save(author=author, article=article)
-            return Response(comment.data, status=HTTPStatus.CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
+    def perform_create(self, serializer):
+        slug = self.kwargs.get('slug')
+        article = get_object_or_404(Article, slug=slug)
+        serializer.save(author=self.request.user, article=article)
 
-    return Response(article.errors, status=HTTPStatus.BAD_REQUEST)
+# View for updating, and deleting a single comment
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CommentSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsUserPermission]
+    lookup_field = 'id'
 
-@api_view(['PUT'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def update_comment(request, slug=None, id=None):
-    """PUT update comment for article"""
-    author = request.user
+    def get_queryset(self):
+        slug = self.kwargs.get('slug')
+        article = get_object_or_404(Article, slug=slug)
+        return article.comments.all()
 
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
+    def get_object(self):
+        obj = super().get_object()
 
-    comment = article.comments.filter(id=id).first()
-    if not comment:
-        return Response({"error": "Comment not found"}, status=HTTPStatus.NOT_FOUND)
-    elif comment.author != author:
-        return Response({"error": "Forbidden"}, status=HTTPStatus.FORBIDDEN)
+        # Check if user can modify this comment
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            if obj.author != self.request.user:
+                raise PermissionDenied("You don't have permission to modify this comment")
 
-    comment_serializer = CommentSerializer(comment, data=request.data, partial=True)
-    if comment_serializer.is_valid():
-        try:
-            comment_serializer.update(comment, comment_serializer.validated_data)
-            return Response(comment_serializer.data, status=HTTPStatus.OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
+        return obj
 
-    return Response(comment.errors, status=HTTPStatus.BAD_REQUEST)
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            raise PermissionDenied("You don't have permission to delete this comment")
 
-@api_view(['DELETE'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def delete_comment(request, slug=None, id=None):
-    """DELETE comment for article"""
-    author = request.user
+        instance.delete()
 
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
-    elif article.author != author:
-        return Response({"error": "Forbidden"}, status=HTTPStatus.FORBIDDEN)
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if instance.author != self.request.user:
+            raise PermissionDenied("You don't have permission to edit this comment")
 
-    comment = article.comments.filter(id=id).first()
-    if not comment:
-        return Response({"error": "Comment not found"}, status=HTTPStatus.NOT_FOUND)
-    elif comment.author != author:
-        return Response({"error": "Forbidden"}, status=HTTPStatus.FORBIDDEN)
-
-    comment.delete()
-    return Response(status=HTTPStatus.NO_CONTENT)
+        serializer.save()

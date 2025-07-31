@@ -1,124 +1,99 @@
-from http import HTTPStatus
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
+from rest_framework import generics
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.throttling import UserRateThrottle
-from django.core.paginator import Paginator
-
+from rest_framework.exceptions import PermissionDenied
 
 from ..throttles.custom_view_throttle import CustomViewThrottle
-from .helpers.paginate_helper import paginate_queryset
+from ..models import *
+from ..serializers import *
+from .helpers.custom_paginate import CustomPagination
+from ..permissions.is_user import IsUserPermission
 
-from ..models.favorite import Favorite
-from ..models.article import Article
-from ..models.follow import Follow
-from ..serializers.article_detail_response_serializer import ArticleDetailResponseSerializer
-from ..serializers.article_list_response_serializer import ArticleListResponseSerializer
-from ..serializers.article_serializer import ArticleSerializer
+# View for listing and creating articles
+class ArticleListCreateView(generics.ListCreateAPIView):
+    serializer_class = ArticleListResponseSerializer
+    throttle_classes = [CustomViewThrottle]
+    pagination_class = CustomPagination
 
-@api_view(['GET'])
-@throttle_classes([CustomViewThrottle])
-def get_article(request, slug=None):
-    if slug is not None:
-        """GET detail by slug"""
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
+    def get_queryset(self):
+        queryset = Article.objects.all().order_by('-created_at')
 
-        return Response(ArticleDetailResponseSerializer(article).data)
-    else:
-        """GET list of articles"""
-        all_articles = Article.objects.all().order_by('-created_at')
-        filter_tag = request.query_params.get('tag', None)
+        # Filter by tag
+        filter_tag = self.request.query_params.get('tag', None)
         if filter_tag:
-            all_articles = all_articles.filter(tags__name__iexact=filter_tag.strip())
-        filter_author = request.query_params.get('author', None)
+            queryset = queryset.filter(tags__name__iexact=filter_tag.strip())
+
+        # Filter by author
+        filter_author = self.request.query_params.get('author', None)
         if filter_author:
-            all_articles = all_articles.filter(author__username=filter_author.strip())
+            queryset = queryset.filter(author__username=filter_author.strip())
 
-        return paginate_queryset(all_articles, request, ArticleListResponseSerializer)
+        return queryset
 
-@api_view(['POST'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def create_article(request):
-    """POST create new article"""
-    author = request.user
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ArticleSerializer
+        return ArticleListResponseSerializer
 
-    article = ArticleSerializer(data=request.data)
-    if article.is_valid():
-        try:
-            article.save(author=author)
-            return Response(article.data, status=HTTPStatus.CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsUserPermission()]
+        return []
 
-    return Response(article.errors, status=HTTPStatus.BAD_REQUEST)
+    def get_authenticators(self):
+        if self.request.method == 'POST':
+            return [JWTAuthentication()]
+        return []
 
-@api_view(['PUT'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def update_article(request, slug=None):
-    """PUT update article"""
-    author = request.user
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
-    elif article.author != author:
-        return Response({"error": "Forbidden"}, status=HTTPStatus.FORBIDDEN)
+# View for detail, updating, and deleting a single article
+class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Article.objects.all()
+    lookup_field = 'slug'
 
-    article_serializer = ArticleSerializer(article, data=request.data, partial=True)
-    if article_serializer.is_valid():
-        try:
-            article_serializer.update(article, article_serializer.validated_data)
-            return Response(article_serializer.data, status=HTTPStatus.OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ArticleDetailResponseSerializer
+        return ArticleSerializer
 
-    return Response(article_serializer.errors, status=HTTPStatus.BAD_REQUEST)
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return []
+        return [IsAuthenticated()]
 
-@api_view(['DELETE'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def delete_article(request, slug=None):
-    """DELETE article"""
-    author = request.user
+    def get_authenticators(self):
+        if self.request.method == 'GET':
+            return []
+        return [JWTAuthentication(), IsUserPermission()]
 
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
-    elif article.author != author:
-        return Response({"error": "Forbidden"}, status=HTTPStatus.FORBIDDEN)
+    def perform_update(self, serializer):
+        article = self.get_object()
+        if article.author != self.request.user:
+            raise PermissionDenied("You don't have permission to edit this article")
+        serializer.save()
 
-    article.delete()
-    return Response(status=HTTPStatus.NO_CONTENT)
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            raise PermissionDenied("You don't have permission to delete this article")
+        instance.delete()
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def get_feed(request, slug=None):
-    """GET list of followed articles"""
-    user_following_ids = Follow.objects.filter(follower=request.user).values_list('following', flat=True)
-    if not user_following_ids.exists():
-        return Response({"data": []})
+# View for listing articles from followed authors
+class ArticleFeedView(generics.ListAPIView):
+    serializer_class = ArticleListResponseSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsUserPermission]
+    pagination_class = CustomPagination
 
-    all_articles = Article.objects.filter(author__in=user_following_ids).order_by('-created_at')
-    return Response({"data": ArticleListResponseSerializer(all_articles, many=True).data})
+    def get_queryset(self):
+        user_following_ids = Follow.objects.filter(
+            follower=self.request.user
+        ).values_list('following', flat=True)
 
-@api_view(['POST'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def add_favorite(request, slug=None):
-    """POST add article to favorites"""
-    article = Article.objects.filter(slug=slug).first()
-    if not article:
-        return Response({"error": "Article not found"}, status=HTTPStatus.NOT_FOUND)
+        if not user_following_ids.exists():
+            return Article.objects.none()
 
-    try:
-        Favorite.objects.get_or_create(user=request.user, article=article)
-        return Response({"message": "Article added to favorites"}, status=HTTPStatus.CREATED)
-    except Exception as e:
-        return Response({"error": str(e)}, status=HTTPStatus.BAD_REQUEST)
+        return Article.objects.filter(
+            author__in=user_following_ids
+        ).order_by('-created_at')
