@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api.views import *
+from django.views.decorators.cache import cache_page
 
 router = DefaultRouter()
 app_name = 'api'
@@ -16,7 +17,7 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('articles/', ArticleListCreateView.as_view(), name='article-list'),
-    path('articles/feed/', ArticleFeedView.as_view(), name='article-feed'),
+    path('articles/feed/', cache_page(60 * 1)(ArticleFeedView.as_view()), name='article-feed'),
     path('articles/<slug:slug>/', ArticleDetailView.as_view(), name='article-detail'),
     path('articles/<slug:slug>/favorite/', FavoriteView.as_view(), name='article-favorite'),
 

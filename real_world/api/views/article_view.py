@@ -2,6 +2,7 @@ from rest_framework import generics
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from django.views.decorators.cache import cache_page
 
 from ..throttles.custom_view_throttle import CustomViewThrottle
 from ..models import *
@@ -80,6 +81,7 @@ class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 # View for listing articles from followed authors
+# @cache_page(60 * 1)
 class ArticleFeedView(generics.ListAPIView):
     serializer_class = ArticleListResponseSerializer
     authentication_classes = [JWTAuthentication]
@@ -87,6 +89,7 @@ class ArticleFeedView(generics.ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
+        # products = cache.get(cache_key)
         user_following_ids = Follow.objects.filter(
             follower=self.request.user
         ).values_list('following', flat=True)

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+import sys
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -87,18 +88,26 @@ import pymysql
 
 
 pymysql.install_as_MySQLdb()
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'OPTIONS': {
-            'database': os.getenv('DATABASE_NAME'),
-            'user': os.getenv('DATABASE_USER'),
-            'password': os.getenv('DATABASE_PASSWORD'),
-            'host': os.getenv('DATABASE_HOST'),
-            'port': int(os.getenv('DATABASE_PORT')),
-        },
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'OPTIONS': {
+                'database': os.getenv('DATABASE_NAME'),
+                'user': os.getenv('DATABASE_USER'),
+                'password': os.getenv('DATABASE_PASSWORD'),
+                'host': os.getenv('DATABASE_HOST'),
+                'port': int(os.getenv('DATABASE_PORT')),
+            },
+        }
+    }
 
 
 # Password validation
@@ -157,7 +166,11 @@ REST_FRAMEWORK = {
         'anon': '100/day',
         'user': '1000/day',
         'custom_view': '50/day',
-    }
+    },
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1'],
+    'VERSION_PARAM': 'version',
 }
 
 SIMPLE_JWT = {
@@ -186,3 +199,10 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'api.User'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}

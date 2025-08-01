@@ -11,3 +11,8 @@ Learning Django rest framwork
 ## Show setting:
 - Enable virtual enviroment: `source env/bin/activate`
 - Get urls: `python real_world/manage.py show_urls`
+
+## Testing and coverage:
+- Run test coverage: `coverage run --source='api' real_world/manage.py test api`
+- Generate coverage report: `coverage report`
+- Generate HTML coverage report: `coverage html`
