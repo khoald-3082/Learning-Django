@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+import sys
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -87,18 +88,26 @@ import pymysql
 
 
 pymysql.install_as_MySQLdb()
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'OPTIONS': {
-            'database': os.getenv('DATABASE_NAME'),
-            'user': os.getenv('DATABASE_USER'),
-            'password': os.getenv('DATABASE_PASSWORD'),
-            'host': os.getenv('DATABASE_HOST'),
-            'port': int(os.getenv('DATABASE_PORT')),
-        },
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'OPTIONS': {
+                'database': os.getenv('DATABASE_NAME'),
+                'user': os.getenv('DATABASE_USER'),
+                'password': os.getenv('DATABASE_PASSWORD'),
+                'host': os.getenv('DATABASE_HOST'),
+                'port': int(os.getenv('DATABASE_PORT')),
+            },
+        }
+    }
 
 
 # Password validation

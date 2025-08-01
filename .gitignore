@@ -1,6 +1,8 @@
 # Ignore Python bytecode files
 __pycache__/
 env/
+htmlcov/
 
 # Ignore environment variables file
 .env
+.coverage
