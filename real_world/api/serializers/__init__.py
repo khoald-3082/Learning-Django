@@ -3,3 +3,4 @@ from .article_list_response_serializer import ArticleListResponseSerializer
 from .article_detail_response_serializer import ArticleDetailResponseSerializer
 from .comment_serializer import CommentSerializer
 from .user_serializer import UserSerializer
+from .tag_serializer import TagSerializer
