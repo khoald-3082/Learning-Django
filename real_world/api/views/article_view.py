@@ -2,6 +2,7 @@ from rest_framework import generics
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
 from ..throttles.custom_view_throttle import CustomViewThrottle
@@ -9,8 +10,10 @@ from ..models import *
 from ..serializers import *
 from .helpers.custom_paginate import CustomPagination
 from ..permissions.is_user import IsUserPermission
+from ..common.constant import cache_time
 
 # View for listing and creating articles
+# @method_decorator(cache_page(cache_time["3m"]), name='get')
 class ArticleListCreateView(generics.ListCreateAPIView):
     serializer_class = ArticleListResponseSerializer
     throttle_classes = [CustomViewThrottle]
@@ -68,20 +71,18 @@ class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return []
         return [JWTAuthentication(), IsUserPermission()]
+    def get_object(self):
+        obj = super().get_object()
 
-    def perform_update(self, serializer):
-        article = self.get_object()
-        if article.author != self.request.user:
-            raise PermissionDenied("You don't have permission to edit this article")
-        serializer.save()
+        # Check if user can modify this comment
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            if obj.author != self.request.user:
+                raise PermissionDenied("You don't have permission to modify this article")
 
-    def perform_destroy(self, instance):
-        if instance.author != self.request.user:
-            raise PermissionDenied("You don't have permission to delete this article")
-        instance.delete()
+        return obj
 
 # View for listing articles from followed authors
-# @cache_page(60 * 1)
+# @method_decorator(cache_page(cache_time["3m"]), name='get')
 class ArticleFeedView(generics.ListAPIView):
     serializer_class = ArticleListResponseSerializer
     authentication_classes = [JWTAuthentication]
@@ -89,7 +90,6 @@ class ArticleFeedView(generics.ListAPIView):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        # products = cache.get(cache_key)
         user_following_ids = Follow.objects.filter(
             follower=self.request.user
         ).values_list('following', flat=True)

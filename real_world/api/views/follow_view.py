@@ -17,36 +17,22 @@ class FollowView(APIView):
     def post(self, request, username=None):
         """POST add user to follow"""
         user_to_follow = get_object_or_404(User, username=username)
-
-        try:
-            follow, created = Follow.objects.get_or_create(
-                follower=request.user,
-                following=user_to_follow
-            )
-            message = "User followed" if created else "User already followed"
-            return Response(
-                {"message": message},
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_BAD_REQUEST
-            )
+        follow, created = Follow.objects.get_or_create(
+            follower=request.user,
+            following=user_to_follow
+        )
+        message = "User followed" if created else "User already followed"
+        return Response(
+            {"message": message},
+            status=status.HTTP_201_CREATED
+        )
 
     def delete(self, request, username=None):
         """DELETE remove follow user"""
         user_to_unfollow = get_object_or_404(User, username=username)
-
-        try:
-            follow = Follow.objects.get(follower=request.user, following=user_to_unfollow)
-            follow.delete()
-            return Response(
-                {"message": "User unfollowed"},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        except Follow.DoesNotExist:
-            return Response(
-                {"error": "User not followed"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        follow = get_object_or_404(Follow, follower=request.user, following=user_to_unfollow)
+        follow.delete()
+        return Response(
+            {"message": "User unfollowed"},
+            status=status.HTTP_204_NO_CONTENT
+        )

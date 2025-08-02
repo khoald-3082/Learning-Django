@@ -17,36 +17,22 @@ class FavoriteView(APIView):
     def post(self, request, slug=None):
         """POST add article to favorites"""
         article = get_object_or_404(Article, slug=slug)
-
-        try:
-            favorite, created = Favorite.objects.get_or_create(
-                user=request.user,
-                article=article
-            )
-            message = "Article added to favorites" if created else "Article already in favorites"
-            return Response(
-                {"message": message},
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_BAD_REQUEST
-            )
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user,
+            article=article
+        )
+        message = "Article added to favorites" if created else "Article already in favorites"
+        return Response(
+            {"message": message},
+            status=status.HTTP_201_CREATED
+        )
 
     def delete(self, request, slug=None):
         """DELETE remove article from favorites"""
         article = get_object_or_404(Article, slug=slug)
-
-        try:
-            favorite = Favorite.objects.get(user=request.user, article=article)
-            favorite.delete()
-            return Response(
-                {"message": "Article removed from favorites"},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        except Favorite.DoesNotExist:
-            return Response(
-                {"error": "Article not in favorites"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        favorite = get_object_or_404(Favorite, user=request.user, article=article)
+        favorite.delete()
+        return Response(
+            {"message": "Article removed from favorites"},
+            status=status.HTTP_204_NO_CONTENT
+        )

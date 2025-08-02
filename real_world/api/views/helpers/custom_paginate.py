@@ -14,9 +14,9 @@ class CustomPagination(PageNumberPagination):
         return Response({
             "data": data,
             "pagination": {
-                "total": self.page.paginator.count,
+                "total_items": self.page.paginator.count,
                 "current_page": self.page.number,
                 "total_pages": self.page.paginator.num_pages,
-                "has_data": len(data) > 0
+                "has_more": self.page.number < self.page.paginator.num_pages
             }
         })

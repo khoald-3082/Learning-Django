@@ -10,7 +10,12 @@ Learning Django rest framwork
 
 ## Show setting:
 - Enable virtual enviroment: `source env/bin/activate`
+- Install packages: `pip install -r .requirements`
 - Get urls: `python real_world/manage.py show_urls`
+
+## Create reauirement by pip-chill:
+- Install pip-chill: `pip install pip-chill`
+- Create file requirement: `pip-chill > .requirements`
 
 ## Testing and coverage:
 - Run test coverage: `coverage run --source='api' real_world/manage.py test api`

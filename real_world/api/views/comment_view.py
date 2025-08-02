@@ -8,6 +8,7 @@ from ..models import *
 from ..serializers import *
 from .helpers.custom_paginate import CustomPagination
 from ..permissions.is_user import IsUserPermission
+from ..common.constant import cache_time
 
 # View for listing and creating comments for an article
 class CommentListCreateView(generics.ListCreateAPIView):
@@ -55,16 +56,3 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
                 raise PermissionDenied("You don't have permission to modify this comment")
 
         return obj
-
-    def perform_destroy(self, instance):
-        if instance.author != self.request.user:
-            raise PermissionDenied("You don't have permission to delete this comment")
-
-        instance.delete()
-
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied("You don't have permission to edit this comment")
-
-        serializer.save()

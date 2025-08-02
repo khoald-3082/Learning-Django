@@ -16,8 +16,8 @@ class GetProfileView(APIView):
 
     def get(self, request):
         user = request.user
-        articles = user.articles.all().order_by('-created_at')
-        comments = user.comments.all().order_by('-created_at')
+        articles = user.articles.all().order_by('-created_at')[:3]
+        comments = user.comments.all().order_by('-created_at')[:3]
         return Response({
             "profile": UserSerializer(user).data,
             "articles": ArticleListResponseSerializer(articles, many=True).data,
@@ -32,8 +32,8 @@ class RegisterUserView(CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
             try:
+                serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
                 serializer.save()
                 return Response({'message': 'Register successful!'}, status=HTTPStatus.CREATED)
             except Exception as e:
